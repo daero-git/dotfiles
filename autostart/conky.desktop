@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Conky
+Comment=Desktop clock/calendar widget
+Exec=conky -c /home/nick/.config/conky/conky.conf
+Terminal=false
+X-GNOME-Autostart-Delay=8

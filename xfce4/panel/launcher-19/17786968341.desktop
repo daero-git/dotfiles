@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Obsidian
+Exec=/home/nick/.local/bin/Obsidian-1.12.4.AppImage
+Icon=obsidian
+Type=Application
+Categories=Office;
+X-XFCE-Source=file:///home/nick/.local/share/applications/obsidian.desktop
