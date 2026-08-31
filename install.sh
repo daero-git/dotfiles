@@ -14,7 +14,7 @@ sudo apt-get install -y \
     conky-all lua5.3 \
     variety imagemagick \
     xfce4 xfce4-panel xfwm4 \
-    python3 curl \
+    python3 python3-pil curl \
     fonts-noto-core fonts-dejavu-mono
 
 backup_and_link() {
@@ -42,9 +42,12 @@ backup_and_copy() {
 echo "==> Linking Conky (symlinked: edits in ~/.config stay in sync with this repo)"
 backup_and_link "$DOTFILES/conky/conky.conf" "$CONFIG/conky/conky.conf"
 backup_and_link "$DOTFILES/conky/clock.lua" "$CONFIG/conky/clock.lua"
+backup_and_link "$DOTFILES/conky/principles.conf" "$CONFIG/conky/principles.conf"
+backup_and_link "$DOTFILES/conky/moon.conf" "$CONFIG/conky/moon.conf"
 mkdir -p "$CONFIG/conky/scripts"
 backup_and_link "$DOTFILES/conky/scripts/month_calendar.py" "$CONFIG/conky/scripts/month_calendar.py"
 backup_and_link "$DOTFILES/conky/scripts/weather.py" "$CONFIG/conky/scripts/weather.py"
+backup_and_link "$DOTFILES/conky/scripts/moon.py" "$CONFIG/conky/scripts/moon.py"
 
 echo "==> Linking Variety wallpaper config"
 backup_and_link "$DOTFILES/variety/variety.conf" "$CONFIG/variety/variety.conf"
@@ -52,8 +55,10 @@ mkdir -p "$CONFIG/variety/scripts"
 backup_and_link "$DOTFILES/variety/scripts/set_wallpaper" "$CONFIG/variety/scripts/set_wallpaper"
 chmod +x "$CONFIG/variety/scripts/set_wallpaper"
 
-echo "==> Installing autostart entry"
+echo "==> Installing autostart entries"
 backup_and_copy "$DOTFILES/autostart/conky.desktop" "$CONFIG/autostart/conky.desktop"
+backup_and_copy "$DOTFILES/autostart/conky-principles.desktop" "$CONFIG/autostart/conky-principles.desktop"
+backup_and_copy "$DOTFILES/autostart/conky-moon.desktop" "$CONFIG/autostart/conky-moon.desktop"
 
 echo "==> Restoring XFCE panel/desktop/window-manager settings"
 echo "    (xfsettingsd should be stopped/not yet running for these to take on first login)"
@@ -81,12 +86,15 @@ cat <<'EOF'
      widget will still render, just not perfectly spaced -- see the
      "Tuning after a resolution change" note in README.md.
 
-  4. Weather location is hardcoded to Carleton Place, ON in weather.py.
+  4. Weather location is hardcoded to Carleton Place, ON in weather.py
+     (and to the same location, label-only, in moon.py).
 
   5. Log out and back in (or run `xfce4-panel --restart`) to pick up the
      restored panel/desktop XFCE settings.
 
-  6. Start Conky: `conky -c ~/.config/conky/conky.conf &` (or just log in --
-     the autostart entry launches it automatically after an 8s delay).
+  6. Start Conky: `conky -c ~/.config/conky/conky.conf &`,
+     `conky -c ~/.config/conky/principles.conf &`, and
+     `conky -c ~/.config/conky/moon.conf &` (or just log in -- the
+     autostart entries launch all three automatically after an 8s delay).
 
 EOF

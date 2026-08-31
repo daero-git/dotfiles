@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Conky Principles
+Comment=Left-side principles & maxims reference widget
+Exec=conky -c /home/nick/.config/conky/principles.conf
+Terminal=false
+X-GNOME-Autostart-Delay=8

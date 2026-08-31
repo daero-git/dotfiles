@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Conky Moon
+Comment=Center-screen moon phase / Sun-Earth-Moon position widget
+Exec=conky -c /home/nick/.config/conky/moon.conf
+Terminal=false
+X-GNOME-Autostart-Delay=8
