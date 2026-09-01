@@ -22,6 +22,16 @@ vertical line through the globe is its rotation axis (see AXIS_LINE); the
 day/night terminator tilts relative to that axis over the widget's fake
 "year" via a real axial-tilt declination (see AXIAL_TILT_DEG), the same
 mechanism that causes real seasons.
+
+The Earth-Sun ring and the Moon-Earth ring are NOT coplanar, matching real
+life: Earth's own orbit defines the reference plane (there's nothing for it
+to be inclined relative to), but the Moon's orbit around Earth really is
+tilted about 5.14 degrees off that plane (see MOON_ORBIT_INCLINATION_DEG).
+That tilt is modeled as a genuine third (Z) axis, not just a flatter ellipse
+-- the Moon has real depth, so it's drawn in front of or behind Earth
+depending which is actually closer to the viewer each render (see
+moon_orbit_point's depth value and its use in draw_diagram), and its orbit
+ring is traced point-by-point rather than assumed to be a flat ellipse.
 """
 import math
 import datetime
@@ -32,6 +42,7 @@ from PIL import Image, ImageDraw, ImageChops
 from continents_data import CONTINENTS
 
 MAROON = (115, 20, 30)
+MAROON_DIM = (200, 90, 100, 130)  # marker outline when Carleton Place is on the far side right now
 LIT = (230, 226, 208)
 DARK_MOON = (36, 36, 42)
 RIM = (255, 255, 255, 130)
@@ -155,13 +166,12 @@ def draw_sun(canvas, cx, cy, r, scale=3):
 
 
 # --- Body sizes -------------------------------------------------------
-# Not to scale -- Sun and Moon are drawn the same size as each other on
-# purpose (their real size difference is roughly cancelled out by the Sun
-# being so much farther away, so equal-size reads as "both prominent,
-# neither the focus by virtue of size alone").
-SUN_R = 22
-EARTH_R = 18
-MOON_R = 22
+# Not to scale. Sun 100% bigger, Earth 50% bigger, Moon 50% smaller than
+# their original equal-ish sizes -- a deliberate size hierarchy (Sun >
+# Earth > Moon) rather than the previous "Sun and Moon the same size."
+SUN_R = 44
+EARTH_R = 27
+MOON_R = 11
 
 # --- Orbit distances ----------------------------------------------------
 # Not to scale, but pushed out so the Sun reads as dramatically farther
@@ -172,9 +182,28 @@ MOON_R = 22
 # some breathing room between the two rings as the Sun's ring grew so much.
 MOON_ORBIT_RX = 136
 EARTH_ORBIT_RX = 330
-SQUISH = 0.4  # vertical/horizontal ratio -- same tilt for both rings, since both lie in roughly the same plane
-MOON_ORBIT_RY = round(MOON_ORBIT_RX * SQUISH)
+SQUISH = 0.4  # vertical/horizontal ratio -- same viewing angle for both rings, since both are seen by the same camera
 EARTH_ORBIT_RY = round(EARTH_ORBIT_RX * SQUISH)
+
+# The "camera" elevation angle implied by SQUISH (a flat ring's minor/major
+# axis ratio, viewed from elevation angle t above its own plane, is sin(t)).
+# Used to project the Moon's inclined orbit (see below) into the same scene,
+# so both rings read as viewed by one consistent camera rather than two
+# independently-squished ellipses.
+ORBIT_VIEW_TILT_RAD = math.asin(SQUISH)
+
+# Real average inclination of the Moon's orbital plane to the ecliptic
+# (Earth's own orbital plane, which by definition has no inclination
+# relative to itself). This is what actually keeps the two rings from being
+# coplanar -- see moon_orbit_point below.
+MOON_ORBIT_INCLINATION_DEG = 5.145
+
+# The inclined orbit's max vertical screen reach is MOON_ORBIT_RX *
+# sin(view_tilt + inclination), a bit more than the flat-ellipse case (just
+# SQUISH) would give -- needed for accurate canvas padding below so the
+# Moon can't clip the window edge now that it swings slightly further up
+# and down than a flat ring would.
+MOON_ORBIT_RY = round(MOON_ORBIT_RX * math.sin(ORBIT_VIEW_TILT_RAD + math.radians(MOON_ORBIT_INCLINATION_DEG)))
 
 # --- Canvas -------------------------------------------------------------
 # Fixed rather than measured from rendered content -- Earth's position on
@@ -364,26 +393,72 @@ def draw_earth(canvas, d, cx, cy, r, day_frac, sun_dir_deg, scale=3):
         fill=AXIS_LINE, width=1,
     )
 
-    # Carleton Place marker: real latitude + real local-time longitude,
-    # drawn only when it's actually on the visible (near) hemisphere.
+    # Carleton Place marker: real latitude + real local-time longitude.
+    # Always drawn (a "where am I" marker that vanishes for hours at a time
+    # whenever the real rotation carries it to the far side isn't useful),
+    # but hollow/dim when it's actually on the far hemisphere right now, so
+    # the globe still reads honestly -- solid means "facing you," faint
+    # outline means "around the back."
     loc_p = latlon_to_unit(CARLETON_PLACE_LAT_DEG, rot_deg)
+    lx = cx + r * dot3(loc_p, right)
+    ly = cy - r * dot3(loc_p, up)
+    tri = [(lx, ly - 5), (lx - 4.5, ly + 3.5), (lx + 4.5, ly + 3.5)]
     if dot3(loc_p, cam) > 0:
-        lx = cx + r * dot3(loc_p, right)
-        ly = cy - r * dot3(loc_p, up)
-        d.polygon(
-            [(lx, ly - 5), (lx - 4.5, ly + 3.5), (lx + 4.5, ly + 3.5)],
-            fill=MAROON, outline=RIM,
-        )
+        d.polygon(tri, fill=MAROON, outline=RIM)
+    else:
+        d.polygon(tri, outline=MAROON_DIM)
 
 
 def draw_ring(d, cx, cy, rx, ry, draw_body):
     """Draw an elliptical orbit ring with its far half behind and near half
     in front of the body at its center -- the depth cue that reads as a
-    tilted 3D plane instead of a flat circle."""
+    tilted 3D plane instead of a flat circle. Only correct for a ring with
+    no inclination of its own (the Sun-Earth ring): with zero inclination,
+    the near/far crossover really does fall exactly at the ellipse's
+    left/right ends, which is all a bounding-box arc can draw. The Moon's
+    inclined ring uses moon_orbit_point + draw_inclined_moon_ring instead,
+    since its near/far crossover shifts away from those points."""
     bbox = [cx - rx, cy - ry, cx + rx, cy + ry]
     d.arc(bbox, 180, 360, fill=LINE_BACK, width=1)
     draw_body()
     d.arc(bbox, 0, 180, fill=LINE_DIM, width=1)
+
+
+def moon_orbit_point(moon_ang, earth_x, earth_y):
+    """Screen (x, y) and camera-relative depth for the point at angle
+    moon_ang (radians) around Earth's real, inclined orbital circle.
+
+    The orbit is built in Earth's own local frame: x_local runs along the
+    line of nodes (where the Moon's plane crosses the ecliptic, taken here
+    as a fixed reference direction since real nodal precession is far too
+    slow to matter at this widget's decorative timescale), y_local/z_local
+    are that circle rotated MOON_ORBIT_INCLINATION_DEG out of the ecliptic.
+    Projecting through the same camera used for the Sun-Earth ring (see
+    ORBIT_VIEW_TILT_RAD) is what keeps the two rings looking like one
+    consistent 3D scene instead of two independently-squished ellipses.
+    """
+    incl = math.radians(MOON_ORBIT_INCLINATION_DEG)
+    x_local = MOON_ORBIT_RX * math.cos(moon_ang)
+    y_perp = MOON_ORBIT_RX * math.sin(moon_ang)
+    y_ecl = y_perp * math.cos(incl)
+    z_ecl = y_perp * math.sin(incl)
+
+    t = ORBIT_VIEW_TILT_RAD
+    sx = earth_x + x_local
+    sy = earth_y - (y_ecl * math.sin(t) + z_ecl * math.cos(t))
+    depth = -y_ecl * math.cos(t) + z_ecl * math.sin(t)  # >0 = nearer the viewer than Earth's center
+    return sx, sy, depth
+
+
+def draw_inclined_moon_ring(d, earth_x, earth_y, steps=72):
+    """Trace the Moon's inclined orbit as a polyline (not a flat ellipse --
+    PIL can't draw a tilted-circle projection with its arc primitive), each
+    segment styled by its own actual depth rather than a fixed near/far
+    split."""
+    pts = [moon_orbit_point(2 * math.pi * i / steps, earth_x, earth_y) for i in range(steps + 1)]
+    for (x1, y1, d1), (x2, y2, d2) in zip(pts, pts[1:]):
+        color = LINE_DIM if (d1 + d2) > 0 else LINE_BACK
+        d.line([x1, y1, x2, y2], fill=color, width=1)
 
 
 def edge_point(cx, cy, r, toward_x, toward_y):
@@ -411,19 +486,25 @@ def draw_diagram(canvas, d, p, day_frac, now_utc):
     )
 
     moon_ang = math.radians(orbit_angle_deg(now_utc, MOON_ORBIT_PERIOD_S))
-    moon_x = earth_x + MOON_ORBIT_RX * math.cos(moon_ang)
-    moon_y = earth_y - MOON_ORBIT_RY * math.sin(moon_ang)
+    moon_x, moon_y, moon_depth = moon_orbit_point(moon_ang, earth_x, earth_y)
 
-    draw_ring(
-        d, earth_x, earth_y, MOON_ORBIT_RX, MOON_ORBIT_RY,
-        lambda: draw_earth(canvas, d, earth_x, earth_y, EARTH_R, day_frac, sun_dir_deg),
-    )
+    draw_inclined_moon_ring(d, earth_x, earth_y)
     d.line(
         [*edge_point(earth_x, earth_y, EARTH_R, moon_x, moon_y), moon_x, moon_y],
         fill=LINE_DIM, width=2,
     )
 
-    draw_moon_disc(canvas, moon_x, moon_y, MOON_R, p)
+    # Whichever body is actually nearer the viewer this moment is drawn on
+    # top -- real depth now, not a fixed draw order, since the Moon's
+    # inclined orbit genuinely carries it in front of and behind Earth.
+    draw_earth_body = lambda: draw_earth(canvas, d, earth_x, earth_y, EARTH_R, day_frac, sun_dir_deg)
+    draw_moon_body = lambda: draw_moon_disc(canvas, moon_x, moon_y, MOON_R, p)
+    if moon_depth > 0:
+        draw_earth_body()
+        draw_moon_body()
+    else:
+        draw_moon_body()
+        draw_earth_body()
 
 
 def build():
