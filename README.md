@@ -18,20 +18,31 @@ match the widget so the two blend together.
   `middle_middle` and allowed to dominate the screen's middle third, that
   just displays a PNG (`scripts/moon.py` generates it to
   `~/.config/conky/moon_snapshot.png`, re-run every 30 min via `${execpi}`)
-  showing a nested orbit diagram: Earth's ring around the Sun, the Moon's
-  ring around Earth, and Earth itself with a night-side shadow and a gold
-  marker for Carleton Place. Sun and Moon are drawn the same size as each
-  other and much closer together than reality (see the sizing/distance
-  comments at the top of `moon.py`) — none of it is to scale.
+  showing an orbit diagram: Earth's ring around the Sun, and the Moon's
+  ring around Earth — genuinely non-coplanar, since the Moon's orbit is
+  tilted its real ~5.14 degrees off the Earth-Sun plane
+  (`MOON_ORBIT_INCLINATION_DEG`) as an actual third (depth) axis, with
+  whichever body is nearer the viewer at the moment drawn on top of the
+  other. Earth itself is a real lit 3D globe with actual (simplified)
+  coastline data from `scripts/continents_data.py` — see that file's own
+  docstring for provenance — a night-side shadow whose terminator tilts
+  seasonally via a real axial-tilt declination (`AXIAL_TILT_DEG`), a faint
+  vertical line through it marking its rotation axis, and a maroon
+  triangle marking Carleton Place: solid when it's on the hemisphere
+  facing the viewer, a dim hollow outline when real rotation has carried
+  it around the back. Body sizes are a deliberate hierarchy (Sun > Earth >
+  Moon, see `SUN_R`/`EARTH_R`/`MOON_R`) and orbit distances are pushed in
+  close for the widget's scale (see the comments at the top of `moon.py`)
+  — none of it is to scale.
   What's real vs. decorative, since it's a mix: the Moon's *phase* (the
   shaded disc — synodic-month approximation from a known new-moon epoch,
-  no network call), Earth's spin (the night shadow and Carleton Place's
-  position both track real local time via `America/Toronto`), and Earth's
-  own day/night direction all come from the real date/time. The Moon's and
-  Earth's *positions on their rings*, though, are NOT their real orbital
-  position (that barely moves in 30 minutes and reads as static) — they're
-  a continuous made-up rotation, Moon once per real day and Earth once per
-  real month, so the picture visibly changes each time you glance at it.
+  no network call), Earth's spin, night shadow, axial-tilt declination,
+  and Carleton Place's real lat/lon position all come from the real
+  date/time and real geometry. The Moon's and Earth's *positions on their
+  rings*, though, are NOT their real orbital position (that barely moves
+  in 30 minutes and reads as static) — they're a continuous made-up
+  rotation, Moon once per real day and Earth once per real month, so the
+  picture visibly changes each time you glance at it.
 - `variety/` — `variety.conf` and `scripts/set_wallpaper`, the hook Variety
   runs on every wallpaper change to tint it to `#1c1c1c` so it matches the
   widget.
@@ -82,14 +93,21 @@ hardcoded and need a look on different hardware:
   there.
 - **Conky window sizing from `${image}`** — unlike plain text, Conky does
   not auto-size `own_window` to fit an `${image ...}` directive (no text
-  glyphs to measure), so `moon.conf` sets `minimum_width`/`minimum_height`
-  explicitly to match `moon.py`'s `CANVAS_W`/`CANVAS_H` (printed by running
-  the script directly, or read off its `build()` return value) and the
-  `${image ... -s WxH}` size in the same file. Conky's actual window also
-  runs noticeably larger than the image (padding that scales with size,
-  not a fixed amount) — if you're relying on a specific clearance from the
-  other widgets, check the live window with `xwininfo -root -tree | grep
-  conky`, don't just compare against the raw image dimensions.
+  glyphs to measure), and it only ever anchors the image at the window's
+  top-left corner (`${image ... -p 0,0}`) with no centering of its own.
+  So `moon.py` pads/centers the rendered diagram onto a fixed canvas
+  (`WINDOW_W`/`WINDOW_H`, near the top of `build()`) before saving, and
+  `moon.conf`'s `minimum_width`/`minimum_height` must match those two
+  constants exactly — otherwise either the image clips inside a too-small
+  window, or (if `WINDOW_W`/`WINDOW_H` don't match a bigger window) the
+  diagram sits off-center instead of at the window's true middle. This
+  deliberately doesn't try to track `moon.py`'s own natural
+  `CANVAS_W`/`CANVAS_H` (which shifts whenever orbit/body-size constants
+  are tuned) — `WINDOW_W`/`WINDOW_H` just need to stay comfortably bigger
+  than the largest `CANVAS_W`/`CANVAS_H` you expect. Check both live with
+  `python3 -c "import moon; print(moon.CANVAS_W, moon.CANVAS_H, moon.WINDOW_W, moon.WINDOW_H)"`
+  from `conky/scripts/`, or the actual on-screen window with
+  `xwininfo -root -tree | grep conky`.
 - **XFCE display config** (`displays.xml`) is tied to this monitor's EDID
   and won't match different hardware — XFCE will just fall back to
   defaults, which is safe but means external-monitor/multi-head setups
