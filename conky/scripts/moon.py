@@ -175,13 +175,10 @@ MOON_R = 11
 
 # --- Orbit distances ----------------------------------------------------
 # Not to scale, but pushed out so the Sun reads as dramatically farther
-# from Earth than the Moon is. Earth's distance from the Sun is +200% over
-# its previous value (110 -> 330); the widget is allowed to dominate the
-# middle of the screen now, so no clearance budget against the other two
-# desktop widgets. Moon's orbit is roughly doubled too (68 -> 136) to keep
-# some breathing room between the two rings as the Sun's ring grew so much.
-MOON_ORBIT_RX = 136
-EARTH_ORBIT_RX = 330
+# from Earth than the Moon is. Earth 25% closer to the Sun and the Moon 25%
+# closer to Earth than their previous values (330 -> 248, 136 -> 102).
+MOON_ORBIT_RX = 102
+EARTH_ORBIT_RX = 248
 SQUISH = 0.4  # vertical/horizontal ratio -- same viewing angle for both rings, since both are seen by the same camera
 EARTH_ORBIT_RY = round(EARTH_ORBIT_RX * SQUISH)
 
@@ -507,6 +504,20 @@ def draw_diagram(canvas, d, p, day_frac, now_utc):
         draw_earth_body()
 
 
+# moon.conf displays this file at a fixed screen position with no `-p`
+# centering logic of its own -- conky just anchors the image at the
+# window's top-left corner. So the diagram is centered onto a canvas
+# exactly matching moon.conf's own minimum_width/minimum_height here,
+# rather than saved at its own natural (and orbit/size-tuning-dependent)
+# CANVAS_W x CANVAS_H: that would anchor the *window* on screen but leave
+# the diagram itself sitting top-left inside it, off true screen-center,
+# whenever the diagram is smaller than the window's padded minimum size
+# (which it deliberately is, so the diagram can't clip the window edge --
+# see moon.conf's own comment on minimum_height/minimum_width).
+WINDOW_W = 1150
+WINDOW_H = 550
+
+
 def build():
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     local = local_now(now_utc)
@@ -517,9 +528,13 @@ def build():
     d = ImageDraw.Draw(img)
     draw_diagram(img, d, p, day_frac, now_utc)
 
+    out = Image.new("RGBA", (WINDOW_W, WINDOW_H), (0, 0, 0, 0))
+    offset = ((WINDOW_W - CANVAS_W) // 2, (WINDOW_H - CANVAS_H) // 2)
+    out.alpha_composite(img, offset)
+
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
-    img.save(OUT_PATH)
-    return img.size
+    out.save(OUT_PATH)
+    return out.size
 
 
 if __name__ == "__main__":
