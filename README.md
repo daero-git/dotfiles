@@ -28,7 +28,7 @@ match the widget so the two blend together.
   docstring for provenance — a night-side shadow whose terminator tilts
   seasonally via a real axial-tilt declination (`AXIAL_TILT_DEG`), a faint
   vertical line through it marking its rotation axis, and a maroon
-  triangle marking Carleton Place: solid when it's on the hemisphere
+  triangle marking a home location: solid when it's on the hemisphere
   facing the viewer, a dim hollow outline when real rotation has carried
   it around the back. Body sizes are a deliberate hierarchy (Sun > Earth >
   Moon, see `SUN_R`/`EARTH_R`/`MOON_R`) and orbit distances are pushed in
@@ -37,7 +37,7 @@ match the widget so the two blend together.
   What's real vs. decorative, since it's a mix: the Moon's *phase* (the
   shaded disc — synodic-month approximation from a known new-moon epoch,
   no network call), Earth's spin, night shadow, axial-tilt declination,
-  and Carleton Place's real lat/lon position all come from the real
+  and the home location's real lat/lon position all come from the real
   date/time and real geometry. The Moon's and Earth's *positions on their
   rings*, though, are NOT their real orbital position (that barely moves
   in 30 minutes and reads as static) — they're a continuous made-up
@@ -78,9 +78,9 @@ hardcoded and need a look on different hardware:
 - **Battery device** — `clock.lua` reads `${battery_percent BAT0}`. Check
   `/sys/class/power_supply/` — a desktop with no battery will just show 0%
   on that ring (harmless, just pointless).
-- **Weather location** — `weather.py` calls
-  `wttr.in/Carleton+Place,ON?format=j1`, hardcoded. No API key involved,
-  just change the location string.
+- **Weather location** — `weather.py` calls `wttr.in/<lat>,<lon>?format=j1`
+  with a hardcoded lat/lon. No API key involved, just change the
+  coordinates.
 - **Screen-resolution-tuned spacing** — `gap_y` in `conky.conf` and
   `SYSTEM_BLOCK_TOP` in `clock.lua` were hand-tuned against a 1366x768
   screen (positioning the widget below a 26px top panel with room for

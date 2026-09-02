@@ -3,7 +3,7 @@ import subprocess
 
 try:
     result = subprocess.run(
-        ["curl", "-s", "--max-time", "8", "wttr.in/Carleton+Place,ON?format=j1"],
+        ["curl", "-s", "--max-time", "8", "wttr.in/45.13,-76.14?format=j1"],  # home lat/lon
         capture_output=True,
         text=True,
         timeout=10,
@@ -16,7 +16,7 @@ try:
     humidity = cur["humidity"]
 
     print(
-        f"${{alignc}}${{font Noto Sans:size=8}}${{color aaaaaa}}Carleton Place ${{color}}"
+        f"${{alignc}}${{font Noto Sans:size=8}}${{color aaaaaa}}Home ${{color}}"
         f"${{color ffb454}}${{font Noto Sans:bold:size=11}}{temp}°C${{font}}${{color}}${{font Noto Sans:size=8}} "
         f"{desc}  ${{color aaaaaa}}Feels {feels}°  Hum {humidity}%${{color}}${{font}}"
     )

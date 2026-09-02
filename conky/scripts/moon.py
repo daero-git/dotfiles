@@ -1,6 +1,6 @@
 """Renders a snapshot PNG of the current Sun-Earth-Moon arrangement for the
 Conky widget in ../moon.conf: Earth's orbit around the Sun, the Moon's orbit
-around Earth, and Carleton Place, ON marked on a real 3D globe (with a
+around Earth, and a home location marked on a real 3D globe (with a
 night-side shadow). No text, just the diagram. Distances are not to scale --
 see EARTH_ORBIT_RX/MOON_ORBIT_RX below.
 
@@ -8,20 +8,20 @@ The Moon's and Earth's positions on their rings are NOT tied to their real
 orbital position (that barely moves between 30-minute renders and reads as
 static) -- they're a continuous decorative rotation at made-up but
 sensible-feeling speeds (see ORBIT_PERIOD constants below). The Moon's
-*phase* (shading), Earth's spin (day/night side, local time, and Carleton
-Place's real latitude/longitude), and the Sun's shading are still computed
-from the real date/time and real geometry.
+*phase* (shading), Earth's spin (day/night side, local time, and the home
+location's real latitude/longitude), and the Sun's shading are still
+computed from the real date/time and real geometry.
 
 Earth is rendered as an actual lit sphere (viewed from a fixed elevation
 angle, EARTH_VIEW_TILT_DEG) rather than a flat rotating disc -- this is what
-lets Carleton Place's real latitude (CARLETON_PLACE_LAT_DEG) place it
-correctly, instead of a rim-angle scheme that had no notion of latitude at
-all and could swing the marker up near the poles as the day rotated it.
-Carleton Place itself is marked with a small maroon triangle. A faint
-vertical line through the globe is its rotation axis (see AXIS_LINE); the
-day/night terminator tilts relative to that axis over the widget's fake
-"year" via a real axial-tilt declination (see AXIAL_TILT_DEG), the same
-mechanism that causes real seasons.
+lets the home location's real latitude (HOME_LAT_DEG) place it correctly,
+instead of a rim-angle scheme that had no notion of latitude at all and
+could swing the marker up near the poles as the day rotated it. The home
+location itself is marked with a small maroon triangle. A faint vertical
+line through the globe is its rotation axis (see AXIS_LINE); the day/night
+terminator tilts relative to that axis over the widget's fake "year" via a
+real axial-tilt declination (see AXIAL_TILT_DEG), the same mechanism that
+causes real seasons.
 
 The Earth-Sun ring and the Moon-Earth ring are NOT coplanar, matching real
 life: Earth's own orbit defines the reference plane (there's nothing for it
@@ -42,7 +42,7 @@ from PIL import Image, ImageDraw, ImageChops
 from continents_data import CONTINENTS
 
 MAROON = (115, 20, 30)
-MAROON_DIM = (200, 90, 100, 130)  # marker outline when Carleton Place is on the far side right now
+MAROON_DIM = (200, 90, 100, 130)  # marker outline when the home location is on the far side right now
 LIT = (230, 226, 208)
 DARK_MOON = (36, 36, 42)
 RIM = (255, 255, 255, 130)
@@ -221,13 +221,13 @@ SUN_X, SUN_Y = HALF_W, HALF_H
 # --- Earth globe geometry -------------------------------------------------
 # Earth is rendered as an actual sphere, viewed from a fixed elevation angle
 # above its equatorial plane (0 = edge-on, 90 = looking straight down over a
-# pole). This is what gives Carleton Place a real latitude band to sit in,
+# pole). This is what gives the home location a real latitude band to sit in,
 # instead of the old flat-disc rim scheme where its position was really just
 # encoding longitude/time-of-day and could wander up to what looked like a
 # pole.
 EARTH_VIEW_TILT_DEG = 28
-CARLETON_PLACE_LAT_DEG = 45.13
-CARLETON_PLACE_LON_DEG = -76.14
+HOME_LAT_DEG = 45.13
+HOME_LON_DEG = -76.14
 
 # Real axial tilt -- the sun's declination (its angle above/below Earth's
 # equator) swings +-AXIAL_TILT_DEG over a year as a result, which is what
@@ -358,9 +358,9 @@ def draw_earth(canvas, d, cx, cy, r, day_frac, sun_dir_deg, scale=3):
             )
             lat = math.degrees(math.asin(max(-1.0, min(1.0, p[2]))))
             world_lon = math.degrees(math.atan2(p[1], p[0]))
-            # undo Earth's spin, then re-anchor on Carleton Place's real
+            # undo Earth's spin, then re-anchor on the home location's real
             # longitude to get this pixel's real-world longitude
-            real_lon = world_lon - rot_deg + CARLETON_PLACE_LON_DEG
+            real_lon = world_lon - rot_deg + HOME_LON_DEG
 
             color = LAND_COLOR if is_land(lat, real_lon) else EARTH_COLOR
             if dot3(p, sun_dir3) <= 0:
@@ -390,13 +390,13 @@ def draw_earth(canvas, d, cx, cy, r, day_frac, sun_dir_deg, scale=3):
         fill=AXIS_LINE, width=1,
     )
 
-    # Carleton Place marker: real latitude + real local-time longitude.
+    # Home location marker: real latitude + real local-time longitude.
     # Always drawn (a "where am I" marker that vanishes for hours at a time
     # whenever the real rotation carries it to the far side isn't useful),
     # but hollow/dim when it's actually on the far hemisphere right now, so
     # the globe still reads honestly -- solid means "facing you," faint
     # outline means "around the back."
-    loc_p = latlon_to_unit(CARLETON_PLACE_LAT_DEG, rot_deg)
+    loc_p = latlon_to_unit(HOME_LAT_DEG, rot_deg)
     lx = cx + r * dot3(loc_p, right)
     ly = cy - r * dot3(loc_p, up)
     tri = [(lx, ly - 5), (lx - 4.5, ly + 3.5), (lx + 4.5, ly + 3.5)]

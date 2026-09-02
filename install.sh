@@ -86,8 +86,8 @@ cat <<'EOF'
      widget will still render, just not perfectly spaced -- see the
      "Tuning after a resolution change" note in README.md.
 
-  4. Weather location is hardcoded to Carleton Place, ON in weather.py
-     (and to the same location, label-only, in moon.py).
+  4. Weather location is hardcoded to a lat/lon in weather.py (and to the
+     same coordinates in moon.py).
 
   5. Log out and back in (or run `xfce4-panel --restart`) to pick up the
      restored panel/desktop XFCE settings.
