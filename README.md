@@ -60,11 +60,17 @@ git clone <this repo> ~/dotfiles
 ~/dotfiles/install.sh
 ```
 
-The script installs the required packages (`conky-all`, `variety`,
-`imagemagick`, `xfce4`, `python3-pil`, fonts), symlinks the Conky/Variety config into
-`~/.config` (so future edits there stay tracked in this repo automatically),
-and copies the XFCE settings into place. It backs up anything already at
-those paths first.
+`install.sh` installs the required packages (`conky-all`, `variety`,
+`imagemagick`, `xfce4`, `python3-pil`, fonts) -- this step needs network --
+then hands off to `link-configs.sh`, which symlinks the Conky/Variety config
+into `~/.config` (so future edits there stay tracked in this repo
+automatically) and copies the XFCE settings into place. It backs up anything
+already at those paths first.
+
+If there's no network yet (or the packages above are already installed),
+run `~/dotfiles/link-configs.sh` directly -- it's pure file copying/linking
+and touches no network. Widgets just won't actually render until the
+packages are in place.
 
 ## Things that won't just transfer
 
