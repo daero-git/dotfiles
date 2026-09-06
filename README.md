@@ -77,8 +77,10 @@ packages are in place.
 This was built and tuned on one specific machine, so a few values are
 hardcoded and need a look on different hardware:
 
-- **Network interface** — `conky.conf` reads `wlp1s0` for IP/signal/up-down
-  speed. Check `ip -br link` on the new machine and update those
+- **Network interface** — `conky.conf` reads `wlxccbabd613c26` (this
+  machine's USB wifi adapter, an RTL8188EU on the `rtl8xxxu` driver — the
+  MacBook Air's built-in wifi isn't used) for IP/signal/up-down speed.
+  Check `ip -br link` on a different machine and update those
   `${addr ...}` / `${wireless_link_qual_perc ...}` / `${upspeedf ...}` /
   `${downspeedf ...}` calls if it differs.
 - **Battery device** — `clock.lua` reads `${battery_percent BAT0}`. Check
