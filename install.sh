@@ -7,9 +7,14 @@ set -euo pipefail
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+SUDO=""
+if [ "$(id -u)" -ne 0 ]; then
+    SUDO="sudo"
+fi
+
 echo "==> Installing packages"
-sudo apt-get update
-sudo apt-get install -y \
+$SUDO apt-get update
+$SUDO apt-get install -y \
     conky-all lua5.3 \
     variety imagemagick \
     xfce4 xfce4-panel xfwm4 \
